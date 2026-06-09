@@ -9,16 +9,22 @@ import getUrl from "@/utils/getUrl";
   <div class="flex items-center justify-center flex-wrap">
     {
       infoLinks.map((infoItem) => (
-        <a title={infoItem.name} href={infoItem.outlink} target="_blank">
-          {infoItem.icon === 'csdn-icon' ? (
-            <svg class="w-5 h-5 mr-2 cursor-pointer" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-              <rect width="1024" height="1024" rx="200" fill="#555555"/>
-              <path d="M690.17 791.95c-78.9 0-142-26.65-189.34-79.95s-71.05-125.12-71.05-214.78c0-87.35 23.3-157.9 69.9-211.7 46.6-53.79 110.15-80.68 190.66-80.68 53.77 0 100.93 13.9 141.48 41.7 40.56 27.8 69.05 67.87 85.47 420.25h-91.07c-13.89-111.95-39.6-193.07-77.16-243.34-37.55-50.27-86.84-75.41-147.88-75.41-65.7 0-118.8 21.65-159.3 64.96-40.5 43.3-60.75 106.66-60.75 190.07s19.8 147.16 59.4 191.07c39.6 43.9 92.23 65.85 157.88 65.85 57.87 0 107.45-21.6 128.75-64.8l85.47 38.6c-31.1 63.88-75.46 109.9-133.09 138.03-57.62 28.12-124.08 42.18-199.38 42.18z" fill="#FFFFFF"/>
-            </svg>
-          ) : (
-            <i class={infoItem.icon + " text-2xl mr-2 cursor-pointer"}/>
-          )}
-        </a>
+        infoItem.outlink.startsWith('mailto:') ? (
+          <span title={infoItem.name} class="email-toggle cursor-pointer">
+            <i class={infoItem.icon + " text-2xl mr-2"}/>
+          </span>
+        ) : (
+          <a title={infoItem.name} href={infoItem.outlink} target="_blank">
+            {infoItem.icon === 'csdn-icon' ? (
+              <svg class="w-5 h-5 mr-2 cursor-pointer" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                <rect width="1024" height="1024" rx="200" fill="#555555"/>
+                <path d="M690.17 791.95c-78.9 0-142-26.65-189.34-79.95s-71.05-125.12-71.05-214.78c0-87.35 23.3-157.9 69.9-211.7 46.6-53.79 110.15-80.68 190.66-80.68 53.77 0 100.93 13.9 141.48 41.7 40.56 27.8 69.05 67.87 85.47 420.25h-91.07c-13.89-111.95-39.6-193.07-77.16-243.34-37.55-50.27-86.84-75.41-147.88-75.41-65.7 0-118.8 21.65-159.3 64.96-40.5 43.3-60.75 106.66-60.75 190.07s19.8 147.16 59.4 191.07c39.6 43.9 92.23 65.85 157.88 65.85 57.87 0 107.45-21.6 128.75-64.8l85.47 38.6c-31.1 63.88-75.46 109.9-133.09 138.03-57.62 28.12-124.08 42.18-199.38 42.18z" fill="#FFFFFF"/>
+              </svg>
+            ) : (
+              <i class={infoItem.icon + " text-2xl mr-2 cursor-pointer"}/>
+            )}
+          </a>
+        )
       ))
     }
   </div>
@@ -28,9 +34,8 @@ import getUrl from "@/utils/getUrl";
 </div>
 
 <script>
-  document.querySelectorAll('.ri-mail-fill').forEach((icon) => {
-    icon.closest('a').addEventListener('click', function(e) {
-      e.preventDefault();
+  document.querySelectorAll('.email-toggle').forEach((el) => {
+    el.addEventListener('click', function() {
       const emailDisplay = document.getElementById('email-display');
       if (emailDisplay) {
         emailDisplay.classList.toggle('hidden');
