@@ -123,32 +123,44 @@ const filtersHeadingsLength = filtersHeadings.length;
   </style>
 
   <script>
-    const anchors = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-    const links = document.querySelectorAll('#toc > ul > li > a');
+    function initTocScroll() {
+      const toc = document.getElementById('toc');
+      const anchors = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      const links = document.querySelectorAll('#toc > ul > li > a');
+      if (!toc || anchors.length === 0 || links.length === 0) return;
 
-    const observerOptions = {
-      root: null,
-      rootMargin: '0px  0px -75% 0px',
-      threshold: 0,
-    };
+      const observerOptions = {
+        root: null,
+        rootMargin: '0px 0px -75% 0px',
+        threshold: 0,
+      };
 
-    const callback = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          let index = Array.from(anchors).indexOf(entry.target);
-          console.log('🚀 ~ callback ~ index:', index);
+      const callback = (entries: IntersectionObserverEntry[]) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            let index = Array.from(anchors).indexOf(entry.target);
+            links.forEach((link) => {
+              link.classList.remove('active-heading');
+            });
+            const activeLink = links[index] as HTMLElement;
+            if (activeLink) {
+              activeLink.classList.add('active-heading');
+              // 自动滚动目录，使当前高亮项可见
+              activeLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+          }
+        });
+      };
 
-          links.forEach((link) => {
-            link.classList.remove('active-heading');
-          });
-          links[index].classList.add('active-heading');
-        }
+      const observer = new IntersectionObserver(callback, observerOptions);
+      anchors.forEach((anchor) => {
+        observer.observe(anchor);
       });
-    };
+    }
 
-    const observer = new IntersectionObserver(callback, observerOptions);
-    anchors.forEach((link) => {
-      observer.observe(link);
-    });
+    // 首次加载
+    initTocScroll();
+    // Astro View Transitions 页面切换后重新初始化
+    document.addEventListener('astro:after-swap', initTocScroll);
   </script>
 </div>
