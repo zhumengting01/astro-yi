@@ -12,8 +12,6 @@ const { headings = [] } = Astro.props;
 const filtersHeadings = headings
   ? headings.filter((item) => item.depth >= 1 && item.depth <= 6)
   : [];
-
-const filtersHeadingsLength = filtersHeadings.length;
 ---
 
 <div
@@ -24,78 +22,55 @@ const filtersHeadingsLength = filtersHeadings.length;
     <i class="ri-list-check menu-icon"></i>
     {t('blog.tableOfContent')}
   </div>
-  <ul class="flex flex-col max-w-full mt-4 relative">
-    {/* 贯穿整个目录的垂直引导线 */}
-    <div class="absolute left-[7px] top-0 bottom-0 w-[1px] bg-skin-dodge"></div>
-
+  <div class="toc_container mt-4">
+    <ul class="flex flex-col max-w-full">
     {
-      filtersHeadings.map((item, index) => {
-        const isLast = index === filtersHeadingsLength - 1;
-        const nextItem = !isLast ? filtersHeadings[index + 1] : null;
-        // 判断当前标题下是否还有更深层的子标题
-        const hasChildren = nextItem && nextItem.depth > item.depth;
-
-        return (
-          <li class:list={['flex items-start relative', `toc-depth-${item.depth}`]}>
-            {/* 层级缩进容器 */}
-            <div class="flex flex-shrink-0 relative" style={`width: ${(item.depth - 1) * 16 + 16}px;`}>
-              {/* 各级垂直引导线 */}
-              {Array.from({ length: item.depth }).map((_v, _i) => (
-                <div
-                  class="flex flex-col items-center flex-shrink-0"
-                  style={`width: 16px;`}
-                >
-                  {/* 垂直线：从顶部贯穿到底部 */}
-                  <div
-                    class:list={[
-                      'w-[1px] bg-skin-dodge',
-                      // 最后一级使用L形拐角，其他级别使用完整垂直线
-                      _i === item.depth - 1 ? 'h-[11px]' : 'h-full absolute top-0 bottom-0'
-                    ]}
-                  ></div>
-
-                  {/* L形拐角的水平部分 */}
-                  {_i === item.depth - 1 && (
-                    <div class="flex items-center w-full h-[22px] relative">
-                      {/* 水平短线 */}
-                      <div class="w-[8px] h-[1px] bg-skin-dodge absolute left-0 top-[11px]"></div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <a
-              title={item.slug}
-              href={`#${item.slug}`}
-              class:list={[
-                'inline-block truncate py-[2px] hover:text-skin-active transition-colors',
-                item.depth === 1 ? 'font-bold text-base' : '',
-                item.depth === 2 ? 'text-sm' : '',
-                item.depth === 3 ? 'text-xs' : '',
-                item.depth === 4 ? 'text-xs' : '',
-                item.depth === 5 ? 'text-xs' : '',
-                item.depth === 6 ? 'text-xs' : '',
-              ]}
-            >
-              {item.text}
-            </a>
-          </li>
-        );
-      })
+      filtersHeadings.map((item) => (
+        <li class:list={[`toc-depth-${item.depth}`]}>
+          <a
+            title={item.slug}
+            href={`#${item.slug}`}
+            class:list={[
+              'inline-block truncate py-[2px] hover:text-skin-active transition-colors',
+              item.depth === 1 ? 'font-bold text-base' : '',
+              item.depth === 2 ? 'text-sm' : '',
+              item.depth === 3 ? 'text-xs' : '',
+              item.depth === 4 ? 'text-xs' : '',
+              item.depth === 5 ? 'text-xs' : '',
+              item.depth === 6 ? 'text-xs' : '',
+            ]}
+          >
+            {item.text}
+          </a>
+        </li>
+      ))
     }
   </ul>
+  </div>
 
   <style>
     .toc_container {
-      overflow-y: scroll;
-      scrollbar-width: none;
+      max-height: 75vh;
+      overflow-y: auto;
+      scrollbar-width: thin;
       -ms-overflow-style: none;
     }
 
     .toc_container::-webkit-scrollbar {
-      width: 0;
-      height: 0;
+      width: 4px;
+    }
+
+    .toc_container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .toc_container::-webkit-scrollbar-thumb {
+      background: rgba(var(--color-text-dodge), 0.3);
+      border-radius: 2px;
+    }
+
+    .toc_container::-webkit-scrollbar-thumb:hover {
+      background: rgba(var(--color-text-dodge), 0.5);
     }
 
     .active-heading {
@@ -125,41 +100,64 @@ const filtersHeadingsLength = filtersHeadings.length;
   <script>
     function initTocScroll() {
       const toc = document.getElementById('toc');
-      const anchors = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-      const links = document.querySelectorAll('#toc > ul > li > a');
-      if (!toc || anchors.length === 0 || links.length === 0) return;
+      const container = toc?.querySelector('.toc_container') as HTMLElement;
+      const anchors = document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6');
+      const links = container?.querySelectorAll('ul > li > a');
+      if (!toc || !container || anchors.length === 0 || !links || links.length === 0) return;
 
-      const observerOptions = {
-        root: null,
-        rootMargin: '0px 0px -75% 0px',
-        threshold: 0,
-      };
+      let ticking = false;
 
-      const callback = (entries: IntersectionObserverEntry[]) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            let index = Array.from(anchors).indexOf(entry.target);
-            links.forEach((link) => {
-              link.classList.remove('active-heading');
-            });
-            const activeLink = links[index] as HTMLElement;
-            if (activeLink) {
-              activeLink.classList.add('active-heading');
-              // 自动滚动目录，使当前高亮项可见
-              activeLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-            }
+      function updateActiveHeading() {
+        // 使用 getBoundingClientRect 获取标题相对视口的位置
+        let currentIndex = 0;
+        const offset = 120; // 距视口顶部的偏移量
+
+        for (let i = anchors.length - 1; i >= 0; i--) {
+          const rect = (anchors[i] as HTMLElement).getBoundingClientRect();
+          if (rect.top <= offset) {
+            currentIndex = i;
+            break;
           }
-        });
-      };
+        }
 
-      const observer = new IntersectionObserver(callback, observerOptions);
-      anchors.forEach((anchor) => {
-        observer.observe(anchor);
-      });
+        // 高亮当前标题对应的目录项
+        links.forEach((link) => link.classList.remove('active-heading'));
+        const activeLink = links[currentIndex] as HTMLElement;
+        if (!activeLink) return;
+
+        activeLink.classList.add('active-heading');
+
+        // 计算高亮项在目录容器中的相对位置
+        const linkRect = activeLink.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+
+        // 高亮项超出目录可视区域时，自动滚动
+        if (linkRect.top < containerRect.top || linkRect.bottom > containerRect.bottom) {
+          // 计算高亮项在容器内容中的绝对位置
+          const scrollTarget = container.scrollTop + (linkRect.top - containerRect.top) - container.clientHeight / 3;
+          container.scrollTo({
+            top: Math.max(0, scrollTarget),
+            behavior: 'smooth',
+          });
+        }
+      }
+
+      function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          ticking = false;
+          updateActiveHeading();
+        });
+      }
+
+      // 初始定位
+      updateActiveHeading();
+      window.addEventListener('scroll', onScroll, { passive: true });
     }
 
     // 首次加载
-    initTocScroll();
+    document.addEventListener('DOMContentLoaded', initTocScroll);
     // Astro View Transitions 页面切换后重新初始化
     document.addEventListener('astro:after-swap', initTocScroll);
   </script>
